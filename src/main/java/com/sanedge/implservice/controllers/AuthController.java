@@ -31,6 +31,7 @@ import com.sanedge.implservice.repository.RoleRepository;
 import com.sanedge.implservice.repository.UserRepository;
 import com.sanedge.implservice.security.jwt.JwtUtils;
 import com.sanedge.implservice.security.services.UserDetailsImpl;
+import com.sanedge.implservice.service.AuthService;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -40,7 +41,7 @@ public class AuthController {
   AuthenticationManager authenticationManager;
 
   @Autowired
-  UserRepository userRepository;
+  AuthService authService;
 
   @Autowired
   RoleRepository roleRepository;
@@ -52,78 +53,12 @@ public class AuthController {
   JwtUtils jwtUtils;
 
   @PostMapping("/login")
-  public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-
-    Authentication authentication = authenticationManager.authenticate(
-        new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
-
-    SecurityContextHolder.getContext().setAuthentication(authentication);
-    String jwt = jwtUtils.generateJwtToken(authentication);
-
-    UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-    List<String> roles = userDetails.getAuthorities().stream()
-        .map(item -> item.getAuthority())
-        .collect(Collectors.toList());
-
-    return ResponseEntity.ok(new JwtResponse(jwt,
-        userDetails.getId(),
-        userDetails.getUsername(),
-        userDetails.getEmail(),
-        roles));
+  public JwtResponse authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+    return this.authService.login(loginRequest);
   }
 
   @PostMapping("/register")
-  public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
-    if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-      return ResponseEntity
-          .badRequest()
-          .body(new MessageResponse("Error: Username is already taken!"));
-    }
-
-    if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-      return ResponseEntity
-          .badRequest()
-          .body(new MessageResponse("Error: Email is already in use!"));
-    }
-
-    // Create new user's account
-    User user = new User(signUpRequest.getUsername(),
-        signUpRequest.getEmail(),
-        encoder.encode(signUpRequest.getPassword()));
-
-    Set<String> strRoles = signUpRequest.getRole();
-    Set<Role> roles = new HashSet<>();
-
-    if (strRoles == null) {
-      Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-          .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-      roles.add(userRole);
-    } else {
-      strRoles.forEach(role -> {
-        switch (role) {
-          case "admin":
-            Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
-                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-            roles.add(adminRole);
-
-            break;
-          case "mod":
-            Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR)
-                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-            roles.add(modRole);
-
-            break;
-          default:
-            Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-            roles.add(userRole);
-        }
-      });
-    }
-
-    user.setRoles(roles);
-    userRepository.save(user);
-
-    return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+  public MessageResponse registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
+    return this.authService.register(signUpRequest);
   }
 }
