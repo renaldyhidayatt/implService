@@ -1,6 +1,7 @@
 package com.sanedge.implservice.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,16 +32,16 @@ public class WebSecurityConfig { // extends WebSecurityConfigurerAdapter {
   @Autowired
   private AuthEntryPointJwt unauthorizedHandler;
 
+  @Value("${springdoc.api-docs.path}")
+  private String restApiDocPath;
+
+  @Value("${springdoc.swagger-ui.path}")
+  private String swaggerPath;
+
   @Bean
   public AuthTokenFilter authenticationJwtTokenFilter() {
     return new AuthTokenFilter();
   }
-
-  // @Override
-  // public void configure(AuthenticationManagerBuilder
-  // authenticationManagerBuilder) throws Exception {
-  // authenticationManagerBuilder.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
-  // }
 
   @Bean
   public DaoAuthenticationProvider authenticationProvider() {
@@ -67,7 +68,9 @@ public class WebSecurityConfig { // extends WebSecurityConfigurerAdapter {
     http.cors().and().csrf().disable()
         .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
         .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
-        .authorizeRequests().antMatchers("/api/auth/**").permitAll()
+        .authorizeRequests().antMatchers("/api/auth/**").permitAll().antMatchers(String.format("%s/**", restApiDocPath))
+        .permitAll()
+        .antMatchers(String.format("%s/**", swaggerPath)).permitAll()
         .antMatchers("/api/test/**").permitAll()
         .anyRequest().authenticated();
 

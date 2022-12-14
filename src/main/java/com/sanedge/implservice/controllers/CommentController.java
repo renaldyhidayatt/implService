@@ -15,11 +15,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sanedge.implservice.exception.ResourceNotFoundException;
 import com.sanedge.implservice.models.Comment;
 import com.sanedge.implservice.payload.response.CommentResponseDto;
-import com.sanedge.implservice.repository.CommentRepository;
-import com.sanedge.implservice.repository.TutorialRepository;
+
 import com.sanedge.implservice.service.CommentService;
 
 @CrossOrigin(origins = "http://localhost:8080")
